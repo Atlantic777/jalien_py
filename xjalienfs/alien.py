@@ -819,17 +819,29 @@ def CreateJsonCommand(command, options=[]):
     return jcmd
 
 
+def getWBsocket():
+    return asyncio.get_event_loop().run_until_complete(AlienConnect())
+
+
 async def AlienSession(cmd):
+    global wb
     if not cmd: return ''
-    wb = await AlienConnect()
-    if not wb: return ''
+    # wb = await AlienConnect()
+    # wb = getWBsocket()
+    if not wb:
+        wb = await asyncio.gather(AlienConnect())
+    if not wb:
+        print('no wb')
+        return ''
     await wb.send(cmd)
     result = await wb.recv()
     return json.loads(result.lstrip().encode('ascii', 'ignore'))
 
 
 def AlienSendCmd(cmd):
-    return asyncio.get_event_loop().run_until_complete(AlienSession(cmd))
+    loop = asyncio.get_event_loop()
+    # return loop.run_until_complete(AlienSession(cmd))
+    asyncio.run_coroutine_threadsafe(AlienSession(cmd), loop)
 
 
 def IsValidCert(fname):
